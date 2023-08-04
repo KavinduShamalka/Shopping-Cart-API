@@ -4,7 +4,8 @@ const schema = mongoose.Schema;
 
 const cartSchema = new schema({
   user: {
-    type: String,
+    type: mongoose.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   productName: {
@@ -20,8 +21,11 @@ const cartSchema = new schema({
     required: true,
   },
   total: {
-    type: Number,
+    type: Number
   },
+  alltotal: {
+    type: Number
+  }
 });
 
 export default mongoose.model("Cart", cartSchema);
