@@ -23,9 +23,6 @@ const cartSchema = new schema({
   total: {
     type: Number
   },
-  alltotal: {
-    type: Number
-  }
 });
 
 export default mongoose.model("Cart", cartSchema);
