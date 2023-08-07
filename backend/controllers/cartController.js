@@ -1,15 +1,16 @@
 import mongoose from "mongoose";
-import Cart from "../model/Cart";
-import User from "../model/User";
+import Cart from "../model/Cart.js";
+import User from "../model/User.js";
 
+//Add items to cart
 export const addToCart = async (req, res, next) => {
 
-  const { user, productName, price, quantity, total } = req.body;
+  const { user, productName, price, quantity, total } = req.body; //get user details from request body and store them into variables
 
   let existingUser;
 
   try {
-    existingUser = await User.findById(user);
+    existingUser = await User.findById(user); //find the user
   } catch (err) {
     return console.log(err);
   }
@@ -23,7 +24,7 @@ export const addToCart = async (req, res, next) => {
     productName,
     price,
     quantity,
-    total: price * quantity,
+    total: (price * quantity).toFixed(2),
   });
   
   try {
@@ -40,32 +41,13 @@ export const addToCart = async (req, res, next) => {
 
   return res.status(200).json({addCart});
   
-}
+};
 
 
-// export const viewCart1 = async (req, res, next) => {
-  
-//   const uid = req.params.id;
-
-//   let userCart;
-
-//   try {
-//     userCart = await User.findById(uid).populate('cart');
-//   } catch (err) {
-//     return console.log(err);
-//   }
-
-//   if (userCart) {
-//     return res.status(200).json({carts:userCart});
-//   } else {
-//     return res.status(404).json({message:"Cart is empty"});
-//   }
-// }
-
-
+//View cart items
 export const viewCart = async (req, res) => {
   try {
-    const uid = req.params.id; // Get the user ID from the request parameters.
+    const uid = req.params.id; // Get the user ID from the REQUEST PARAMETER
 
     // Find the user with the given ID and populate the 'cart' field to get all cart details.
     const usersCart = await User.findById(uid).populate('cart');
@@ -79,8 +61,10 @@ export const viewCart = async (req, res) => {
         fullTotal += cartItem.price * cartItem.quantity;
       });
 
+      let allTotal = fullTotal.toFixed(2);
+
       // Return the user's cart details along with the full total.
-      return res.status(200).json({ userCart: usersCart.cart, fullTotal });
+      return res.status(200).json({ userCart: usersCart.cart, allTotal });
       }
   } catch (error) {
     console.error('Error viewing cart:', error);
@@ -91,7 +75,7 @@ export const viewCart = async (req, res) => {
 //Update cart by cart ID
 export const updateCart = async (req, res, next) => {
   const { quantity } = req.body; //Get new quantity from the JSON body and store
-  const cartID = req.params.id; //Asign cart ID through REQUEST PARAMETER
+  const cartID = req.params.id; //Get cart ID through REQUEST PARAMETER
   let cart; //define cart variable
 
   try {
@@ -103,7 +87,7 @@ export const updateCart = async (req, res, next) => {
       const price = cart.price; //access cart price
       const total = price * quantity; //update cart total using new quantity
       cart.quantity = quantity; //assign updated quantity
-      cart.total = total; //assign updated total
+      cart.total = total.toFixed(2); //assign updated total
       await cart.save(); //Save cart
       return res.status(200).json({ message: "Cart updated sucessfully", cart }); //Dispaly suceessfull message and show updated cart
     }
@@ -113,3 +97,28 @@ export const updateCart = async (req, res, next) => {
     return res.status(500).json({message: "Unable to update cart!!!"});
   }
 };
+
+//Delete cart items by cartID
+export const deleteItem = async (req, res, next) => {
+  const cartID = req.params.id; //get the cart ID through a REQUEST PARAMETER
+  let cartItem; //define cart variable
+
+  try {
+    cartItem = await Cart.findByIdAndRemove(cartID).populate("user"); //Find the cart items by its ID and populate the user field
+
+    if (!cartItem) {
+      return res.status(404).json({message: "Cart item is not found!!!"});
+    } else {
+      //Remove the cart from the user's cart array
+      await cartItem.user.cart.pull(cartItem);
+      //Save the updated user document to Databse
+      await cartItem.user.save();
+      return res.status(200).json({message: "Suceessfully remove from the cart"});
+    }
+  } catch (err) {
+    console.log(err)
+    return res.status(500).json({message: "Unable to remove cart item"});
+  }
+}
+
+
